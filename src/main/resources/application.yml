@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/medical_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
-    username: root
-    password: password
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -22,12 +22,12 @@ server:
   port: 8080
 
 jwt:
-  secret: skeleton-medical-service-jwt-secret-key-must-be-at-least-256-bits-long
+  secret: ${JWT_SECRET:skeleton-medical-service-jwt-secret-key-must-be-at-least-256-bits-long}
   access-token-expiration: 3600000      # 1시간
   refresh-token-expiration: 604800000   # 7일
 
 ai-server:
-  api-key: internal-ai-server-api-key-change-this
+  api-key: ${AI_API_KEY:internal-ai-server-api-key-change-this}
 
 springdoc:
   api-docs:
