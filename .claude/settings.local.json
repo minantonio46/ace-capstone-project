@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/seong/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/e719b91d-0c75-4cce-8656-7ed6d79452af/645b14ec-a33a-46cb-a9ed-59b4ff219d6b/skills/docx/**)",
+      "Bash(node -e \"require\\(''docx''\\); console.log\\(''docx OK''\\)\")",
+      "Bash(where node:*)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(cmd /c \"node --version\")",
+      "Bash(cmd /c \"where node\")",
+      "Bash(powershell -Command \"Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
+      "Bash(powershell -Command \":*)",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''C:\\\\'' -Filter ''node.exe'' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 3 FullName\")",
+      "Bash(python -c \"import docx; print\\(''python-docx OK''\\)\")",
+      "Bash(pip install:*)",
+      "Bash(python -c \"import docx; print\\(''OK''\\)\")",
+      "Bash(python generate_api_docs.py)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $f ===\")",
+      "Read(//c/스켈레톤기반의료서비스/**)",
+      "Bash(done)"
+    ]
+  }
+}
