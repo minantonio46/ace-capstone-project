@@ -1,0 +1,18 @@
+# 빌드 결과물
+target/
+
+# IDE 설정
+.idea/
+*.iml
+.vscode/
+
+# 환경 설정 (DB 비밀번호, JWT secret 포함 → 절대 올리면 안 됨)
+application-prod.yml
+application-local.yml
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
+# 파이썬 스크립트 (문서 생성용, 소스 아님)
+generate_api_docs.py
