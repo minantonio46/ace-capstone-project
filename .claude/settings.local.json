@@ -19,7 +19,13 @@
       "Bash(do)",
       "Bash(echo \"=== $f ===\")",
       "Read(//c/스켈레톤기반의료서비스/**)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git fetch *)",
+      "Bash(git show *)",
+      "Bash(git ls-tree *)",
+      "Bash(git checkout *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

@@ -35,6 +35,8 @@ public class AuthService {
                 .username(user.getUsername())
                 .name(user.getName())
                 .role(user.getRole().name())
+                .wardId(user.getWardId())
+                .userId(user.getId())
                 .build();
     }
 
