@@ -24,12 +24,19 @@ const PatientAuth = () => {
       alert('환자 코드 6자리를 모두 입력해주세요!');
       return;
     }
+// 여기서부터 나중에 지우시면 됩니다 ----------------------
+    if (code === "121212") {
+      localStorage.setItem('wardId', '121212'); 
+      navigate('/dashboard'); 
+      return; 
+    }
+    // 여기까지가 지워야 할 구역입니다 ------------------------
 
+    
     setLoading(true); // 로딩 상태 시작
     setError('');     // 기존 에러 초기화
 
     try {
-      // 성빈님이 만든 login 함수 호출!
       // 환자 코드를 아이디와 비밀번호로 사용합니다.
       await login(code, code); 
       
