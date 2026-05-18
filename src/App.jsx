@@ -1,5 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import PatientAuth from './pages/PatientAuth';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login'; // pages 폴더 경로로 수정
+import WardOverview from './pages/WardOverview'; // pages 폴더 경로로 수정
 import Dashboard from './pages/Dashboard';
 import DetailedData from './pages/DetailedData';
 import CCTV from './pages/CCTV';
@@ -8,17 +9,21 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 주소창 끝이 / 일 때 (첫 화면) */}
-        <Route path="/" element={<PatientAuth />} />
+        {/* 1. 첫 화면: 의료인 로그인 */}
+        <Route path="/" element={<Login />} />
         
-        {/* 주소창 끝이 /dashboard 일 때 */}
-        <Route path="/dashboard" element={<Dashboard />} />
+        {/* 2. 로그인 후 이동할 병동 전체 현황 대시보드 */}
+        <Route path="/ward" element={<WardOverview />} />
         
-        {/* 주소창 끝이 /details 일 때 */}
+        {/* 3. 특정 환자 클릭 시 진입하는 기존 개별 환자 화면 */}
+        <Route path="/dashboard/:patientId" element={<Dashboard />} />
+        
+        {/* 4. 기존 개별 페이지들 완벽 유지 */}
         <Route path="/details" element={<DetailedData />} />
-        
-        {/* 주소창 끝이 /cctv 일 때 */}
         <Route path="/cctv" element={<CCTV />} />
+        
+        {/* 잘못된 주소 접근 시 로그인 화면으로 리다이렉트 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
