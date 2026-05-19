@@ -4,6 +4,7 @@ import com.medical.skeleton.domain.alert.dto.AlertMessage;
 import com.medical.skeleton.domain.alert.service.AlertService;
 import com.medical.skeleton.domain.medication.dto.AdministerRequest;
 import com.medical.skeleton.domain.medication.dto.MedicationRequest;
+import com.medical.skeleton.domain.medication.dto.UpdateMedicationRequest;
 import com.medical.skeleton.domain.medication.entity.Medication;
 import com.medical.skeleton.domain.medication.entity.MedicationRecord;
 import com.medical.skeleton.domain.medication.entity.MedicationStatus;
@@ -123,6 +124,49 @@ public class MedicationService {
                 .build();
 
         return medicationRecordRepository.save(record);
+    }
+
+    /**
+     * 활성 처방별 가장 최근 투여 기록 조회.
+     * 시계 게이지의 nextDueAt 계산에 사용합니다.
+     */
+    @Transactional(readOnly = true)
+    public List<MedicationRecord> getLatestRecordsPerMedication(Long patientId) {
+        return medicationRepository.findByPatientIdAndStatus(patientId, MedicationStatus.ACTIVE)
+                .stream()
+                .map(med -> medicationRecordRepository
+                        .findTopByMedicationIdOrderByAdministeredAtDesc(med.getId()))
+                .filter(java.util.Optional::isPresent)
+                .map(java.util.Optional::get)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * 약물 처방 정보 수정 (약물명·용량·단위·주기 변경).
+     * null로 전달된 필드는 기존 값 유지합니다.
+     */
+    @Transactional
+    public Medication updateMedication(Long patientId, Long medicationId, UpdateMedicationRequest request) {
+        Medication medication = medicationRepository.findById(medicationId)
+                .orElseThrow(() -> new IllegalArgumentException("약물 처방을 찾을 수 없습니다: " + medicationId));
+        if (!medication.getPatientId().equals(patientId))
+            throw new IllegalArgumentException("해당 환자의 처방이 아닙니다.");
+        medication.update(request.getDrugName(), request.getDosage(), request.getUnit(), request.getIntervalHours());
+        return medicationRepository.save(medication);
+    }
+
+    /**
+     * 약물 처방 중단.
+     * status = DISCONTINUED, endAt = 현재 시각으로 업데이트합니다.
+     */
+    @Transactional
+    public void discontinueMedication(Long patientId, Long medicationId) {
+        Medication medication = medicationRepository.findById(medicationId)
+                .orElseThrow(() -> new IllegalArgumentException("약물 처방을 찾을 수 없습니다: " + medicationId));
+        if (!medication.getPatientId().equals(patientId))
+            throw new IllegalArgumentException("해당 환자의 처방이 아닙니다.");
+        medication.discontinue();
+        medicationRepository.save(medication);
     }
 
     /**

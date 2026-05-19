@@ -92,4 +92,15 @@ public class Medication {
         this.status = MedicationStatus.DISCONTINUED;
         this.endAt = LocalDateTime.now();
     }
+
+    /**
+     * 처방 정보 수정.
+     * null 값으로 전달된 항목은 변경하지 않습니다.
+     */
+    public void update(String drugName, Double dosage, String unit, Integer intervalHours) {
+        if (drugName != null && !drugName.isBlank()) this.drugName = drugName;
+        if (dosage != null && dosage > 0)            this.dosage = dosage;
+        if (unit != null && !unit.isBlank())         this.unit = unit;
+        if (intervalHours != null && intervalHours > 0) this.intervalHours = intervalHours;
+    }
 }
