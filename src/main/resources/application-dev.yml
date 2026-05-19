@@ -1,0 +1,29 @@
+# 개발 프로파일 - MySQL 없이 H2 인메모리 DB로 실행
+# 실행 방법: IntelliJ에서 Active profiles 에 "dev" 입력
+# 또는 VM options에 -Dspring.profiles.active=dev 추가
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:medical_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  h2:
+    console:
+      enabled: true          # http://localhost:8080/h2-console 에서 DB 확인 가능
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # 서버 시작 시 테이블 자동 생성, 종료 시 삭제
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+logging:
+  level:
+    com.medical: DEBUG
+    org.springframework.security: DEBUG
