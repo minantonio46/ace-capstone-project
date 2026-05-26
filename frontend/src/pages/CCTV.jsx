@@ -15,6 +15,11 @@ const SKELETON_EDGES = [
   [12, 14], [14, 16],
 ];
 
+const SKELETON_FPS = 24;
+const FALLBACK_WIDTH  = 1280;
+const FALLBACK_HEIGHT = 720;
+const FALLBACK_ASPECT = FALLBACK_WIDTH / FALLBACK_HEIGHT;
+
 const ROOMS = [
   {
     id: 1,
@@ -40,12 +45,15 @@ const CCTV = () => {
   const [frameLoading,  setFrameLoading]  = useState(true);
   const [fps,           setFps]           = useState(30);
   const [isMasking,     setIsMasking]     = useState(false); // 프라이버시 마스킹 ON/OFF
+  const [videoAspect,   setVideoAspect]   = useState(FALLBACK_ASPECT);
 
-  const videoRef     = useRef(null);
-  const canvasRef    = useRef(null);
-  const animFrameRef = useRef(null);
-  const skeletonRef  = useRef([]);
-  const isMaskingRef = useRef(false);   // rAF 클로저 안에서 최신값 읽기 위해 ref 동기화
+  const videoRef        = useRef(null);
+  const canvasRef       = useRef(null);
+  const animFrameRef    = useRef(null);
+  const skeletonRef     = useRef([]);
+  const isMaskingRef    = useRef(false);   // rAF 클로저 안에서 최신값 읽기 위해 ref 동기화
+  const playbackStartRef = useRef(null);  // 스켈레톤 독립 재생 기준 시각
+  const videoFailedRef   = useRef(false); // 영상 로드/디코딩 실패 시 true
 
   // isMasking state → ref 동기화
   useEffect(() => {
@@ -57,7 +65,10 @@ const CCTV = () => {
     setFrameLoading(true);
     setSkeletonFrames([]);
     skeletonRef.current = [];
+    videoFailedRef.current = false;
+    playbackStartRef.current = null;
     setFps(30);
+    setVideoAspect(FALLBACK_ASPECT);
 
     fetch(selectedRoom.skeletonUrl)
       .then(res => res.json())
@@ -65,7 +76,7 @@ const CCTV = () => {
         setSkeletonFrames(data);
         skeletonRef.current = data;
         const video = videoRef.current;
-        if (video && video.duration) {
+        if (video?.duration) {
           setFps(data.length / video.duration);
         }
         setFrameLoading(false);
@@ -77,11 +88,43 @@ const CCTV = () => {
   }, [selectedRoom]);
 
   const handleVideoMetadata = () => {
+    videoFailedRef.current = false;
     const video = videoRef.current;
     if (!video) return;
-    if (skeletonRef.current.length > 0) {
+    if (video.videoWidth && video.videoHeight) {
+      setVideoAspect(video.videoWidth / video.videoHeight);
+    }
+    if (skeletonRef.current.length > 0 && video.duration) {
       setFps(skeletonRef.current.length / video.duration);
     }
+  };
+
+  const handleVideoError = () => {
+    videoFailedRef.current = true;
+    if (!playbackStartRef.current) {
+      playbackStartRef.current = performance.now();
+    }
+  };
+
+  /** 영상 정상: video.currentTime + 영상 길이 기반 FPS / 실패: performance.now() + 24fps */
+  const getCurrentFrameIdx = (frameCount, videoFps) => {
+    const video = videoRef.current;
+    const useVideoClock =
+      video &&
+      !videoFailedRef.current &&
+      !video.error &&
+      video.readyState >= 1 &&
+      Number.isFinite(video.duration) &&
+      video.duration > 0;
+
+    if (useVideoClock) {
+      const currentFps = videoFps > 0 ? videoFps : 30;
+      return Math.min(Math.round(video.currentTime * currentFps), frameCount - 1);
+    }
+
+    const elapsedSec =
+      (performance.now() - (playbackStartRef.current ?? performance.now())) / 1000;
+    return Math.floor(elapsedSec * SKELETON_FPS) % frameCount;
   };
 
   // ─── 프라이버시 실루엣 그리기 ─────────────────────────────────
@@ -214,41 +257,39 @@ const CCTV = () => {
     });
   };
 
-  // ─── rAF 그리기 루프 ────────────────────────────────────────────
+  // ─── rAF 그리기 루프 (영상 실패해도 24fps로 스켈레톤 재생) ────────
   useEffect(() => {
     if (frameLoading || skeletonFrames.length === 0) return;
 
-    const video  = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
 
     const draw = () => {
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
+      const video = videoRef.current;
+      const vw = video?.videoWidth  || FALLBACK_WIDTH;
+      const vh = video?.videoHeight || FALLBACK_HEIGHT;
 
-      if (vw && vh) {
+      if (canvas.width !== vw || canvas.height !== vh) {
         canvas.width  = vw;
         canvas.height = vh;
       }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const frames        = skeletonRef.current;
-      const currentFps    = fps > 0 ? fps : 30;
-      const currentFrameIdx = Math.min(
-        Math.round(video.currentTime * currentFps),
-        frames.length - 1
-      );
-      const frameData = frames[currentFrameIdx];
+      const frames = skeletonRef.current;
+      if (frames.length === 0) {
+        animFrameRef.current = requestAnimationFrame(draw);
+        return;
+      }
+
+      const frameData = frames[getCurrentFrameIdx(frames.length, fps)];
 
       if (frameData?.keypoints) {
         frameData.keypoints.forEach((personKeypoints, personIdx) => {
           if (isMaskingRef.current) {
-            // ── 마스킹 ON: keypoints로 흰색 실루엣 그리기 ──
             drawPrivacySilhouette(ctx, personKeypoints);
           } else {
-            // ── 마스킹 OFF: 스켈레톤 선+점 그리기 ──
             drawSkeleton(ctx, personKeypoints, personIdx);
           }
         });
@@ -375,27 +416,36 @@ const CCTV = () => {
               </div>
             )}
 
-            {/* 영상 + 스켈레톤/마스킹 캔버스 */}
-            <div className="relative w-full h-full">
-              <video
-                ref={videoRef}
-                key={selectedRoom.videoUrl}
-                src={selectedRoom.videoUrl}
-                className="w-full h-full object-contain"
-                autoPlay
-                loop
-                muted
-                onLoadedMetadata={handleVideoMetadata}
-              />
-              {/*
-                캔버스: 마스킹 OFF → 투명 배경 위에 스켈레톤 선+점
-                        마스킹 ON  → keypoints 기반 흰색 실루엣 (누군지 식별 불가)
-              */}
-              <canvas
-                ref={canvasRef}
-                className="absolute inset-0 w-full h-full"
-                style={{ pointerEvents: 'none' }}
-              />
+            {/* 영상 비율 wrapper — contain 방식으로 가로·세로 영상 모두 video/canvas 1:1 정렬 */}
+            <div className="absolute inset-0 flex items-center justify-center [container-type:size]">
+              <div
+                className="relative"
+                style={{
+                  aspectRatio: videoAspect,
+                  width: `min(100cqw, calc(100cqh * ${videoAspect}))`,
+                }}
+              >
+                <video
+                  ref={videoRef}
+                  key={selectedRoom.videoUrl}
+                  src={selectedRoom.videoUrl}
+                  className="block w-full h-full"
+                  autoPlay
+                  loop
+                  muted
+                  onLoadedMetadata={handleVideoMetadata}
+                  onError={handleVideoError}
+                />
+                {/*
+                  캔버스: 마스킹 OFF → 투명 배경 위에 스켈레톤 선+점
+                          마스킹 ON  → keypoints 기반 흰색 실루엣 (누군지 식별 불가)
+                */}
+                <canvas
+                  ref={canvasRef}
+                  className="absolute inset-0 w-full h-full"
+                  style={{ pointerEvents: 'none' }}
+                />
+              </div>
             </div>
 
           </div>

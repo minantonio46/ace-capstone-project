@@ -8,14 +8,21 @@ import { useFallAlert } from '../context/FallAlertContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { pendingFallRoom, setPendingFallRoom } = useFallAlert();
+  const { pendingFallRoom, setPendingFallRoom, setGlobalAlert } = useFallAlert();
 
   const [isMenuOpen,    setIsMenuOpen]    = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading,       setLoading]       = useState(true);
   const [error,         setError]         = useState(null);
-  /** { patient, initialType } | null  — 빠른 기록 모달 제어 */
+  /** { patient, initialType, fromFallAlert? } | null  — 빠른 기록 모달 제어 */
   const [modalState,    setModalState]    = useState(null);
+
+  const handleModalClose = useCallback(() => {
+    setModalState(prev => {
+      if (prev?.fromFallAlert) setGlobalAlert(null);
+      return null;
+    });
+  }, [setGlobalAlert]);
 
   /* ─── 대시보드 fetch (5초 자동 갱신) ─── */
   const fetchDashboard = useCallback(async () => {
@@ -54,7 +61,7 @@ const Dashboard = () => {
     const roomNum = pendingFallRoom.replace('호', '');
     const matched = dashboardData.patients.find(p => p.bedNumber?.startsWith(roomNum));
     if (matched) {
-      setModalState({ patient: matched, initialType: 'FALL' });
+      setModalState({ patient: matched, initialType: 'FALL', fromFallAlert: true });
       setPendingFallRoom(null); // 처리 완료 → 초기화
     }
   }, [pendingFallRoom, dashboardData, setPendingFallRoom]);
@@ -296,7 +303,7 @@ const Dashboard = () => {
       {/* ── 빠른 기록 모달 ── */}
       <QuickRecordModal
         isOpen={!!modalState}
-        onClose={() => setModalState(null)}
+        onClose={handleModalClose}
         patient={modalState?.patient}
         initialType={modalState?.initialType || 'VITAL'}
         onSaved={fetchDashboard}

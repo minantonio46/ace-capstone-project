@@ -27,7 +27,7 @@ const FPS              = 24;
 const WINDOW           = 30;    // 직전 30프레임 범위
 const UPRIGHT_MAX      = 1.2;   // 서있을 때 최대 비율
 const FALLEN_MIN       = 1.8;   // 넘어진 상태 최소 비율
-const COOLDOWN_MS      = 7000;  // 알림 지속 + 재감지 방지 시간
+const COOLDOWN_MS      = 7000; // 알림 지속 + 재감지 방지 시간
 const CHECK_INTERVAL   = 300;   // 300ms마다 체크 (백그라운드 탭도 충분)
 
 const FallAlertContext = createContext(null);
@@ -101,10 +101,10 @@ export function FallAlertProvider({ children }) {
           cooldowns.current[room.id] = true;
           setGlobalAlert(`${room.name} ${room.patient} 낙상 감지!`);
           setPendingFallRoom(room.name); // Dashboard가 모달 자동 오픈에 사용
-          setTimeout(() => {
-            setGlobalAlert(null);
-            cooldowns.current[room.id] = false;
-          }, COOLDOWN_MS);
+          // 알림 배너: 기록창 닫힘 또는 7초 후 자동 해제
+          setTimeout(() => setGlobalAlert(null), COOLDOWN_MS);
+          // 재감지 쿨다운: 7초 유지 (배너 해제와 독립)
+          setTimeout(() => { cooldowns.current[room.id] = false; }, COOLDOWN_MS);
         }
       });
     }, CHECK_INTERVAL);
