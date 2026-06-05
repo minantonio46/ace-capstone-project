@@ -65,7 +65,7 @@ public class SecurityConfig {
                 // AI 서버는 X-AI-API-Key 헤더로 자체 인증 (AiEventController 참고)
                 .requestMatchers("/api/ai/**").permitAll()
                 // CCTV용 정적 파일 (영상, 스켈레톤 JSON) - 인증 없이 허용
-                .requestMatchers("/videos/**", "/skeleton/**").permitAll()
+                .requestMatchers("/videos/**").permitAll()
                 // 대시보드: 간호사·의사·관리자 모두 접근 가능
                 .requestMatchers(HttpMethod.GET, "/api/wards/*/dashboard")
                     .hasAnyRole("NURSE", "DOCTOR", "ADMIN")

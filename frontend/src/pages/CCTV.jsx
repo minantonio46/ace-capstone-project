@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import { getSkeletonFrames } from '../api/skeleton';
 
 // COCO 17관절 연결선 정의
 const SKELETON_EDGES = [
@@ -26,14 +27,14 @@ const ROOMS = [
     name: '301호',
     patient: '환자 A',
     videoUrl: 'http://localhost:8080/videos/room1.mp4',
-    skeletonUrl: 'http://localhost:8080/skeleton/room1.json',
+    skeletonDataId: 'room1',
   },
   {
     id: 2,
     name: '302호',
     patient: '환자 B',
     videoUrl: 'http://localhost:8080/videos/room2.mp4',
-    skeletonUrl: 'http://localhost:8080/skeleton/room2.json',
+    skeletonDataId: 'room2',
   },
 ];
 
@@ -70,8 +71,7 @@ const CCTV = () => {
     setFps(30);
     setVideoAspect(FALLBACK_ASPECT);
 
-    fetch(selectedRoom.skeletonUrl)
-      .then(res => res.json())
+    getSkeletonFrames(selectedRoom.skeletonDataId)
       .then(data => {
         setSkeletonFrames(data);
         skeletonRef.current = data;

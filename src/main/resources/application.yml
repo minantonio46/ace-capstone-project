@@ -29,6 +29,10 @@ jwt:
 ai-server:
   api-key: ${AI_API_KEY:internal-ai-server-api-key-change-this}
 
+skeleton:
+  encryption-key: ${SKELETON_ENCRYPTION_KEY:}
+  key-file: ${SKELETON_ENCRYPTION_KEY_FILE:.skeleton-encryption-key}
+
 springdoc:
   api-docs:
     path: /api-docs

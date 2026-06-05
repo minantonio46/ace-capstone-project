@@ -257,3 +257,30 @@ POST /api/cameras/{id}/unassign           배정 해제
 |---|---|
 | `API_명세서_v1.0.docx` | 프론트엔드용 전체 API 명세 (Word) |
 | `ERD_설계.md` | 테이블 설계 및 관계 설명 |
+
+---
+
+## 스켈레톤 JSON 암호화
+
+스켈레톤 원본 JSON과 암호화 키는 로컬에만 보관하고, Git에는 AES-256-GCM으로
+암호화된 파일만 저장합니다.
+
+```text
+skeleton-source/*.json                         # 로컬 평문, Git 제외
+.skeleton-encryption-key                       # 로컬 키, Git 제외
+src/main/resources/encrypted-skeleton/*.enc    # 암호문, Git 포함
+```
+
+새 JSON을 `skeleton-source`에 추가한 뒤 프로젝트 루트에서 다음 명령을 실행합니다.
+
+```powershell
+node tools/encrypt-skeleton-data.mjs
+```
+
+키 파일이 없으면 최초 실행 시 자동 생성됩니다. 배포 환경에서는 로컬 키 파일 대신
+`SKELETON_ENCRYPTION_KEY` 환경변수에 동일한 Base64 키를 설정할 수 있습니다.
+이미 생성된 `.enc` 파일을 다른 PC에서 실행하려면 암호화할 때 사용한 키가 필요하므로,
+`.skeleton-encryption-key`는 Git이 아닌 안전한 별도 채널로 팀원에게 전달해야 합니다.
+
+프론트엔드는 로그인 후 `GET /api/skeleton/{dataId}`를 호출합니다. 백엔드는 암호문을
+메모리에서 복호화하고 JSON 응답만 반환하며, 평문 임시 파일은 생성하지 않습니다.

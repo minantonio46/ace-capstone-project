@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { getSkeletonFrames } from '../api/skeleton';
 
 /**
  * 전역 낙상 감지 컨텍스트
@@ -19,8 +20,8 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
  */
 
 const ROOMS = [
-  { id: 1, name: '301호', patient: '환자 A', skeletonUrl: 'http://localhost:8080/skeleton/room1.json' },
-  { id: 2, name: '302호', patient: '환자 B', skeletonUrl: 'http://localhost:8080/skeleton/room2.json' },
+  { id: 1, name: '301호', patient: '환자 A', skeletonDataId: 'room1' },
+  { id: 2, name: '302호', patient: '환자 B', skeletonDataId: 'room2' },
 ];
 
 const FPS              = 24;
@@ -43,22 +44,34 @@ export function FallAlertProvider({ children }) {
 
   // ── JSON 로드 ────────────────────────────────────────────────
   useEffect(() => {
-    let loadedCount = 0;
+    let cancelled = false;
 
-    ROOMS.forEach(room => {
-      fetch(room.skeletonUrl)
-        .then(r => r.json())
-        .then(data => {
-          framesData.current[room.id] = data;
-          cooldowns.current[room.id]  = false;
-          loadedCount++;
-          // 첫 번째 JSON이 로드된 시점을 시작 기준으로 설정
-          if (loadedCount === 1) {
-            startTime.current = performance.now();
-          }
-        })
-        .catch(() => { /* 백엔드 미실행 시 무시 */ });
-    });
+    const loadAllRooms = () => {
+      if (!localStorage.getItem('accessToken')) return;
+
+      let loadedCount = 0;
+      ROOMS.forEach(room => {
+        getSkeletonFrames(room.skeletonDataId)
+          .then(data => {
+            if (cancelled) return;
+            framesData.current[room.id] = data;
+            cooldowns.current[room.id] = false;
+            loadedCount++;
+            if (loadedCount === 1) {
+              startTime.current = performance.now();
+            }
+          })
+          .catch(() => { /* Backend unavailable or authentication expired. */ });
+      });
+    };
+
+    loadAllRooms();
+    window.addEventListener('auth-changed', loadAllRooms);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('auth-changed', loadAllRooms);
+    };
   }, []);
 
   // ── 300ms마다 현재 프레임 계산 후 낙상 감지 ─────────────────

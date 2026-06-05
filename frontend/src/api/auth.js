@@ -6,6 +6,7 @@ export async function login(username, password) {
   localStorage.setItem('refreshToken', data.data.refreshToken);
   localStorage.setItem('wardId',       data.data.wardId);
   localStorage.setItem('userId',       data.data.userId);
+  window.dispatchEvent(new Event('auth-changed'));
   return data.data;
 }
 
